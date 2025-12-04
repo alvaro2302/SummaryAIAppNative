@@ -22,6 +22,7 @@ struct HomeView: View {
                     Image(systemName: "magnifyingglass").tint(Color.black)
                 }.padding(10)
             }
+    
             VStack(alignment: .center) {
                 Button {
                     
@@ -30,15 +31,10 @@ struct HomeView: View {
                     Text("Start Recording").foregroundColor(.black).font(.title3).bold(true)
                 }.frame(maxWidth: .infinity, maxHeight: 55).background(Color(CGColor(red: 48/255, green: 242/255, blue: 215/255, alpha: 1)))
             }.frame(maxWidth: 350).cornerRadius(20)
-            
-            List {
-                Section(header: Text("My Recordings").font(.title2).foregroundColor(.black).bold(true)) {
-                    CardRecord(record: Record(id: "1", title: "Marketing Strategy Q3", transcription: "fsdfdssf fsdfsddsfdfsds fdsfsdfsdfdfssdf fdsfdsfsdsdfsdf fsdsdfsdfsdf sdffsdsdfdfdfdf fdsfsddsf", duration: 32))
-                    CardRecord(record: Record(id: "2", title: "Marketing Strategy Q3", transcription: "fsdfdssf fsdfsddsfdfsds fdsfsdfsdfdfssdf fdsfdsfsdsdfsdf fsdsdfsdfsdf sdffsdsdfdfdfdf fdsfsddsf", duration: 20))
-                }
-              
-            }.listStyle(.plain)
-        }
+            Spacer()
+            ListCardRecords()
+            Spacer()
+        }.padding(.horizontal, 20)
     }
 }
 
