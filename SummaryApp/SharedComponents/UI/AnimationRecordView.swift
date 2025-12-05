@@ -9,18 +9,19 @@ import SwiftUI
 internal import Combine
 
 struct AnimationRecordView: View {
-    @State private var flag = false
+    @Binding var flag: Bool
     @State private var heightsIndex = 0
     let timer = Timer.publish(every: 0.2, on: .main, in: .common).autoconnect()
     @State private var heights: [CGFloat] = Array(2...40).map { _ in CGFloat.random(in: 10...40) }
     let colorAnimation = Color(red: 48/255, green: 242/255, blue: 215/255)
     let withRectangles = CGFloat(5)
-    
+    @State var height: CGFloat = CGFloat(200)
     var body: some View {
         ZStack {
             Rectangle()
-                .frame(width: .infinity, height: .infinity)
+                .frame(width: .infinity, height: height)
                 .ignoresSafeArea()
+                .foregroundColor(.white)
                 HStack {
                     
                     ForEach(heights.indices, id: \.self) { index in
@@ -46,13 +47,17 @@ struct AnimationRecordView: View {
       
         }
         .onReceive(timer) { _ in
-            print("count \(heights.count)")
-            heights = heights.map{_ in CGFloat(arc4random_uniform(100))}
-            heights.forEach { print($0) }
+            if(flag) {
+                print("count \(heights.count)")
+                heights = heights.map{_ in CGFloat(arc4random_uniform(100))}
+                heights.forEach { print($0) }
+            }
         }
     }
 }
 
 #Preview {
-    AnimationRecordView()
+    
+    @State var flag: Bool = true
+    AnimationRecordView(flag: $flag)
 }
