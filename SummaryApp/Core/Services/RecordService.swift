@@ -20,13 +20,13 @@ class RecordService: ObservableObject {
     private var converterNode: AVAudioMixerNode
     private var isRecording: Bool = false
     var audioData: Data = Data()
-    var dataAudio: CurrentValueSubject<Data, Never> = .init(Data())
+    var dataAudio: CurrentValueSubject<String, Never> = .init("")
     var stateRecord : PassthroughSubject<StateRecord,Never> = .init()
     var stateRecordPublisher: AnyPublisher<StateRecord, Never> {
         stateRecord
             .eraseToAnyPublisher()
     }
-    var dataAudioPublisher: AnyPublisher<Data, Never> {
+    var dataAudioPublisher: AnyPublisher<String, Never> {
         dataAudio.eraseToAnyPublisher()
     }
     init() {
@@ -89,7 +89,7 @@ class RecordService: ObservableObject {
 
         let base64 = out.base64EncodedString()
         audioData = Data(base64.utf8)
-        dataAudio.send(audioData)
+        dataAudio.send(base64)
     }
     @objc func stopRecording() {
         defer {
@@ -97,6 +97,7 @@ class RecordService: ObservableObject {
         }
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine?.stop()
+        audioEngine?.reset()
         audioEngine = nil
         stateRecord.send(.notRecording)
         
