@@ -8,9 +8,10 @@
 internal import Combine
 import SwiftUI
 class RecordViewModel: ObservableObject {
-    @Published var dataRecording: Data? = nil
+    private var audioChunks: [String] = []
     @Published var stateRecording: StateRecord = .idle
     private let recordService: RecordService
+    private let audioEncodingService: AudioEncodigService = AudioEncodigService()
     private var cancellables = Set<AnyCancellable>()
     init(recordService: RecordService = RecordService()) {
         self.recordService = recordService
@@ -20,7 +21,7 @@ class RecordViewModel: ObservableObject {
     private func setupBindings() {
         recordService.dataAudio.receive(on: DispatchQueue.main)
             .sink { [weak self] data in
-                self?.dataRecording = data
+                self?.audioChunks.append(data)
                 
             }
             .store(in: &cancellables)
@@ -43,6 +44,12 @@ class RecordViewModel: ObservableObject {
     func stopRecording() {
         recordService.stopRecording()
         
+    }
+    func sentDataRecording() {
+        
+        let dataAudioWav = audioEncodingService.buildWav(from: audioChunks)
+        //CALL API for sent data audio
+     
     }
     
 }
