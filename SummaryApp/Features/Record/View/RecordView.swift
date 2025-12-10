@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct RecordView: View {
+    @StateObject private var viewModel: RecordViewModel = RecordViewModel()
     @State var isRecording: Bool = false
     var body: some View {
         VStack {
@@ -21,7 +22,7 @@ struct RecordView: View {
                 
                 AnimationRecordView(flag: $isRecording, height: 200)
                 Button {
-                    isRecording.toggle()
+                    handleMainButton()
                 }label: {
                     Image(systemName: "microphone").resizable().frame(width: 20, height: 30).tint(.black).padding(10)
                     
@@ -49,6 +50,29 @@ struct RecordView: View {
            
             
         }.padding(.horizontal,20)
+    }
+    
+    private func handleMainButton() {
+        switch viewModel.stateRecording {
+            case .idle, .notRecording:
+                print("start recording")
+                startRecording()
+            case .recording:
+                print("stop recording")
+                stopRecording()
+            default:
+                break
+            
+        }
+    }
+    private func startRecording() {
+        isRecording = true
+        viewModel.startRecording()
+    }
+    private func stopRecording() {
+        isRecording = false
+        
+        viewModel.stopAndUpload()
     }
 }
 
