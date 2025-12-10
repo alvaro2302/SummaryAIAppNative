@@ -1,106 +1,80 @@
-//
-//  RecordService.swift
-//  SummaryApp
-//
-//  Created by Alvaro Cuiza on 5/12/25.
-//
 import Foundation
 import AVFoundation
 internal import Combine
 
 enum StateRecord {
-    case recording
-    case notRecording
-    case idle
-    case error
+    case recording, notRecording, idle, error
 }
 
-class RecordService: ObservableObject {
+final class RecordService: ObservableObject {
     private var audioEngine: AVAudioEngine?
-    private var converterNode: AVAudioMixerNode
-    private var isRecording: Bool = false
-    var audioData: Data = Data()
-    var dataAudio: CurrentValueSubject<String, Never> = .init("")
+    private var isRecording = false
+    
+    // PCM puro (no base64)
+    @Published var pcmData: Data = Data()
     var stateRecord : PassthroughSubject<StateRecord,Never> = .init()
     var stateRecordPublisher: AnyPublisher<StateRecord, Never> {
         stateRecord
             .eraseToAnyPublisher()
     }
-    var dataAudioPublisher: AnyPublisher<String, Never> {
-        dataAudio.eraseToAnyPublisher()
-    }
-    init() {
-        self.converterNode = AVAudioMixerNode()
-        stateRecord.send(.idle)
-    }
-    
+
     func startRecording() throws {
         guard !isRecording else { return }
         isRecording = true
+        
         let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playAndRecord, mode: .default)
-            try session.setPreferredSampleRate(16000)
-            try session.setActive(true)
-            audioEngine = AVAudioEngine()
-            guard let engine = audioEngine else { return }
-            let input = engine.inputNode
-            let hwFormat = input.inputFormat(forBus: 0)
+        try session.setCategory(.playAndRecord, mode: .default)
+        try session.setPreferredSampleRate(16000)
+        try session.setActive(true)
+        
+        audioEngine = AVAudioEngine()
+        guard let engine = audioEngine else { return }
+        let input = engine.inputNode
+        let hwFormat = input.inputFormat(forBus: 0)
+        
+        let desiredFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
+                                          sampleRate: 16000,
+                                          channels: 1,
+                                          interleaved: true)!
+        
+        let converter = AVAudioConverter(from: hwFormat, to: desiredFormat)!
+        
+        var capturedData = Data()
+        
+        input.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { buffer, _ in
+            let pcmBuffer = AVAudioPCMBuffer(pcmFormat: desiredFormat, frameCapacity: buffer.frameLength)!
             
-            let desiredFormat = AVAudioFormat(commonFormat: .pcmFormatInt32,sampleRate: 16000, channels: 1, interleaved: false)!
-            let converter = AVAudioConverter(from: hwFormat, to: desiredFormat)!
-            input.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { [weak self] (buffer, time) in
-                guard let self else { return }
-                let converted = AVAudioPCMBuffer(pcmFormat: desiredFormat, frameCapacity: AVAudioFrameCount(desiredFormat.sampleRate / 10))!
-                var error: NSError?
-                let inputBlock: AVAudioConverterInputBlock = { (_, outStatus) in
-                    outStatus.pointee = .haveData
-                    return buffer
-                }
-                converter.convert(to: converted, error: &error, withInputFrom: inputBlock)
-                if let err = error {
-                    return
-                }
-                
-                self.sendPCMFloatBuffer(converted)
+            var error: NSError?
+            let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+                outStatus.pointee = .haveData
+                return buffer
             }
-            try engine.start()
-            stateRecord.send(.recording)
-        } catch {
-            stateRecord.send(.error)
-            isRecording = false
-            throw error
             
+            converter.convert(to: pcmBuffer, error: &error, withInputFrom: inputBlock)
+            guard let channelData = pcmBuffer.int16ChannelData else { return }
+            let frameLength = Int(pcmBuffer.frameLength)
+            let channel = channelData[0]
+            
+            for i in 0..<frameLength {
+                var sample = channel[i].littleEndian
+                withUnsafeBytes(of: &sample) { capturedData.append(contentsOf: $0) }
+            }
+            
+            DispatchQueue.main.async {
+                self.pcmData = capturedData
+            }
         }
         
+        try engine.start()
+        stateRecord.send(.recording)
     }
-    private func sendPCMFloatBuffer(_ buffer: AVAudioPCMBuffer) {
-        guard let floatChannelData = buffer.floatChannelData else { return }
-        let frames = Int(buffer.frameLength)
-
-        var out = Data(capacity: frames * 2)
-        let channel = floatChannelData[0]
-
-        for i in 0..<frames {
-            let float = max(-1, min(1, channel[i]))
-            var int16 = Int16(float * Float(Int16.max)).littleEndian
-            withUnsafeBytes(of: &int16) { out.append(contentsOf: $0) }
-        }
-
-        let base64 = out.base64EncodedString()
-        audioData = Data(base64.utf8)
-        dataAudio.send(base64)
-    }
-    @objc func stopRecording() {
-        defer {
-            isRecording = false
-        }
+    
+    func stopRecording() {
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine?.stop()
         audioEngine?.reset()
         audioEngine = nil
+        isRecording = false
         stateRecord.send(.notRecording)
-        
     }
-    
 }
