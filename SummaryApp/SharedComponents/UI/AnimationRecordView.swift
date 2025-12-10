@@ -19,7 +19,7 @@ struct AnimationRecordView: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .frame(width: .infinity, height: height)
+                .frame(width: 200, height: height)
                 .ignoresSafeArea()
                 .foregroundColor(.white)
                 HStack {
@@ -48,9 +48,9 @@ struct AnimationRecordView: View {
         }
         .onReceive(timer) { _ in
             if(flag) {
-                print("count \(heights.count)")
+                //print("count \(heights.count)")
                 heights = heights.map{_ in CGFloat(arc4random_uniform(100))}
-                heights.forEach { print($0) }
+                //heights.forEach { print($0) }
             }
         }
     }
