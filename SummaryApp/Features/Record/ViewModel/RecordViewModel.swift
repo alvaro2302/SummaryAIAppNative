@@ -6,50 +6,44 @@
 //
 
 internal import Combine
-import SwiftUI
-class RecordViewModel: ObservableObject {
-    private var audioChunks: [String] = []
+import Foundation
+@MainActor
+final class RecordViewModel: ObservableObject {
     @Published var stateRecording: StateRecord = .idle
-    private let recordService: RecordService
-    private let audioEncodingService: AudioEncodigService = AudioEncodigService()
-    private var cancellables = Set<AnyCancellable>()
-    init(recordService: RecordService = RecordService()) {
-        self.recordService = recordService
-        setupBindings()
-    }
+    @Published var wavData: Data? = nil
     
-    private func setupBindings() {
-        recordService.dataAudio.receive(on: DispatchQueue.main)
-            .sink { [weak self] data in
-                self?.audioChunks.append(data)
-                
-            }
-            .store(in: &cancellables)
+    private let recordService = RecordService()
+    private let encoder = AudioEncodigService()
+    private let uploader = TalkingService()
+    private var cancellables = Set<AnyCancellable>()
+    init () {
+        buildSetup()
+    }
+    func buildSetup() {
         recordService.stateRecordPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 self?.stateRecording = state
             }
             .store(in: &cancellables)
-        
-    }
-    func starRecording() {
-        do {
-            try recordService.startRecording()
-        } catch {
-            print("Error starting recording: \(error)")
-        }
-        
-    }
-    func stopRecording() {
-        recordService.stopRecording()
-        
-    }
-    func sentDataRecording() {
-        
-        let dataAudioWav = audioEncodingService.buildWav(from: audioChunks)
-        //CALL API for sent data audio
-     
     }
     
+    func startRecording() {
+        do { try recordService.startRecording() }
+        catch { print(error) }
+    }
+    
+    func stopAndUpload()  {
+        recordService.stopRecording()
+        let wav = encoder.pcmToWav(pcmData: recordService.pcmData)
+        self.wavData = wav
+        Task {
+            do {
+                let url = try await uploader.sentRecording(dataAudio: wav)
+                print("Upload URL:", url)
+            } catch {
+                print("Upload failed:", error)
+            }
+        }
+    }
 }
