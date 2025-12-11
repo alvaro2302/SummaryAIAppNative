@@ -38,18 +38,19 @@ struct HomeView: View {
                             Text("Start Recording").foregroundColor(.black).font(.title3).bold(true)
                         }.frame(maxWidth: .infinity, maxHeight: 55).background(Color(CGColor(red: 48/255, green: 242/255, blue: 215/255, alpha: 1))).cornerRadius(20)
                     }
-                }.frame(maxWidth: 350)
+                }.frame(maxWidth: .infinity)
                 Spacer()
                 ListCardRecords()
                 Spacer()
-            }.padding(.horizontal, 20).navigationDestination(for: Route.self) { route in
+            }.navigationDestination(for: Route.self) { route in
                 switch route {
-                    case .record:
-                        RecordView()
+                case .record:
+                    RecordView()
                 }
             }
-
-        }    }
+            
+        }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(.horizontal, 10)
+    }
 }
 
 #Preview {
