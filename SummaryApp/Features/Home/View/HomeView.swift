@@ -33,10 +33,12 @@ struct HomeView: View {
                         
                         path.append(Route.record)
                     }label: {
-                        Image(systemName: "microphone").resizable().frame(width: 20, height: 20).tint(.black).padding(10)
-                        Text("Start Recording").foregroundColor(.black).font(.title3).bold(true)
-                    }.frame(maxWidth: .infinity, maxHeight: 55).background(Color(CGColor(red: 48/255, green: 242/255, blue: 215/255, alpha: 1)))
-                }.frame(maxWidth: 350).cornerRadius(20)
+                        HStack {
+                            Image(systemName: "microphone").resizable().frame(width: 20, height: 20).tint(.black).padding(10)
+                            Text("Start Recording").foregroundColor(.black).font(.title3).bold(true)
+                        }.frame(maxWidth: .infinity, maxHeight: 55).background(Color(CGColor(red: 48/255, green: 242/255, blue: 215/255, alpha: 1))).cornerRadius(20)
+                    }
+                }.frame(maxWidth: 350)
                 Spacer()
                 ListCardRecords()
                 Spacer()
