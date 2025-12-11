@@ -9,6 +9,8 @@ import SwiftUI
 
 struct RecordView: View {
     @StateObject private var viewModel: RecordViewModel = RecordViewModel()
+    @State private var seconds: Int = 0
+    @State private var stateRecord: StateTimer = .stop
     @State var isRecording: Bool = false
     var body: some View {
         VStack {
@@ -16,17 +18,16 @@ struct RecordView: View {
                 .font(.headline).bold()
             
             VStack {
-                HStack {
-                    Text("01:15").font(.custom("Arial", size: 55)).bold().fontWeight(Font.Weight.black)
-                }
+                TimerRecord(seconds: $seconds, stateRecord: $stateRecord)
                 
                 AnimationRecordView(flag: $isRecording, height: 200)
                 Button {
                     handleMainButton()
                 }label: {
-                    Image(systemName: "microphone").resizable().frame(width: 20, height: 30).tint(.black).padding(10)
-                    
-                }.frame(maxWidth: 100, maxHeight: 100).background(Color(CGColor(red: 48/255, green: 242/255, blue: 215/255, alpha: 1))).cornerRadius(50).shadow(radius: 10)
+                    VStack{
+                        Image(systemName: "microphone").resizable().frame(width: 20, height: 30).tint(.black).padding(10)
+                    }.frame(maxWidth: 100, maxHeight: 100).background(Color(CGColor(red: 48/255, green: 242/255, blue: 215/255, alpha: 1))).cornerRadius(50).shadow(radius: 10)
+                }
             }.padding(.top, 100)
             Spacer()
             VStack {
@@ -67,11 +68,12 @@ struct RecordView: View {
     }
     private func startRecording() {
         isRecording = true
+        stateRecord = .start
         viewModel.startRecording()
     }
     private func stopRecording() {
         isRecording = false
-        
+        stateRecord = .stop
         viewModel.stopAndUpload()
     }
 }
