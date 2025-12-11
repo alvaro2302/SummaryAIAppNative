@@ -41,6 +41,9 @@ final class RecordViewModel: ObservableObject {
             do {
                 let url = try await uploader.sentRecording(dataAudio: wav)
                 print("Upload URL:", url)
+                let statusTranscription = try await uploader.startTranscription(audioURL: url.uploadURL)
+                print("status record \(statusTranscription.status)")
+                print("id record \(statusTranscription.id)")
             } catch {
                 print("Upload failed:", error)
             }
